@@ -18,12 +18,12 @@ main(int argc, char **argv)
 	m.out.busy >> p.in.busy;
 	m.out.data >> p.in.data;*/
 
-	p.out.data >> l1.in.data;
-	l1.out.busy >> p.in.busy;
-	l1.out.data >> p.in.data;
-	l1.out.data >> m.in.data;
-	m.out.busy >> l1.in.busy;
-	m.out.data >> l1.in.data;
+	p.out.data >> l1.p_in.data;
+	l1.p_out.busy >> p.in.busy;
+	l1.p_out.data >> p.in.data;
+	l1.m_out.data >> m.in.data;
+	m.out.busy >> l1.m_in.busy;
+	m.out.data >> l1.m_in.data;
 
 	
 

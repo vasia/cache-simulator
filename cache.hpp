@@ -7,12 +7,22 @@ public:
 	struct {
 		Port<mdata_t> data;
 		ControlPort busy;
-	} in;
+	} p_in;
 
 	struct {
 		Port<mdata_t> data;
 		ControlPort busy;
-	} out;
+	} p_out;
+
+	struct {
+		Port<mdata_t> data;
+		ControlPort busy;
+	} m_in;
+
+	struct {
+		Port<mdata_t> data;
+		ControlPort busy;
+	} m_out;
 
 	Cache(int delay, int lines, int line_size);
 
@@ -23,10 +33,12 @@ public:
 
 private:
 	unsigned int latency;
+	int clines;
+	int cline_size;
 	int wait;
 	cycles_t respond;
 	unsigned long respond_addr;
 	unsigned long *buffer;	//it contains only the first address of the cache line
 	char *dirty_bit_buff;	//dirty-bit buffer for the write-back policy
-	};
+};
 
