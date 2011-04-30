@@ -1,5 +1,6 @@
 #include "processor.hpp"
 #include "memory.hpp"
+#include "cache.hpp"
 
 int 
 main(int argc, char **argv)
