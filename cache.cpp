@@ -44,8 +44,14 @@ void Cache::End()
 printf("C: item = %c %lu\n", item.type, item.addr);
 
 		if (item.type == 'R') {
-printf("C: is load!\n");
+			printf("C: is load!\n");
+			//check if data is in the cahe
+			//if(data_in_the_cache){
 			respond = Sim::cycle + cycles_t(latency);
+			//}
+			//else{
+			//respond = Sim::cycle + cycles_t(latency);
+			//}
 			respond_addr = item.addr;
 std::cout << "C: respond = " << respond << "\n";
 		}
