@@ -25,22 +25,21 @@ void Processor::Start()
 	//if I'm not waiting and the input port is not busy
 	//read an item from the file
 	if (!wait && !in.busy) {
-		fscanf(trace, "%c %lx", &item.type, &item.addr);
+		fscanf(trace, "%c %lu\n", &item.type, &item.addr);
 		item.size = 4;
 
-printf("P: item = %c %lu\n", item.type, item.addr);
+		printf("P: item = %c %lu\n", item.type, item.addr);
 
 		//send the item to the output port
 		out.data = item;
 
 		//if the instruction is a load
-		if (item.type == 'R') {
-			//set the waiting flag
-			wait = 1;
-			wait_addr = item.addr;
-		}
+		//The processor has to wait both for reads and writes
+		//set the waiting flag
+		wait = 1;
+		wait_addr = item.addr;
 
-printf("P: wait = %d, wait_addr = %lu\n", wait, wait_addr);
+		printf("P: wait = %d, wait_addr = %lu\n", wait, wait_addr);
 
 	}
 }
@@ -55,7 +54,7 @@ void Processor::End()
 
 		//and it's not the data I'm waiting for
 		if (item.addr != wait_addr) {
-			fprintf(stderr, "ERROR: received wrong address\n");
+			fprintf(stderr, "P: ERROR: received wrong address\n");
 		}
 		//data received -> don't wait anymore
 		wait = 0;

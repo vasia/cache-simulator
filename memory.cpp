@@ -21,10 +21,14 @@ void Memory::Start()
 {
 	mdata_t item;
 
+	//printf("M: Start next cycle!\n");
+	//std::cout << "M: cycle = " << Sim::cycle << "\n";
+
+
 	if (Sim::cycle >= respond) {
 		item.type = 'W';
 		item.addr = respond_addr;
-printf("M(s): sending %lu\n", respond_addr);
+		printf("M(s): sending %lu\n", respond_addr);
 		out.data = item;
 		respond = NEVER;
 	}
@@ -39,12 +43,12 @@ void Memory::End()
 
 printf("M: item = %c %lu\n", item.type, item.addr);
 
-		if (item.type == 'R') {
-printf("M: is load!\n");
+		//if (item.type == 'R') {
+			//printf("M: is load!\n");
 			respond = Sim::cycle + cycles_t(latency);
 			respond_addr = item.addr;
-std::cout << "M: respond = " << respond << "\n";
-		}
+			std::cout << "M: respond = " << respond << "\n";
+		//}
 	}
 
 	if (respond != NEVER) {

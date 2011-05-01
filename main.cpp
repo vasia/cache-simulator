@@ -8,8 +8,20 @@ main(int argc, char **argv)
 	Sim::initSim();
 	Sim *sim = Sim::getSim();
 
+	int delay = 1;
+	int lines = 3;
+	int line_size = 2;
+
+
+	//allocate buffers
+	unsigned long *buffer;
+	char *dirty_bit_buffer;
+	buffer = new unsigned long[lines];
+	dirty_bit_buffer = new char[lines];
+
 	Processor p("small1.out");
-	Cache l1(1, 3, 2);
+	
+	Cache l1(delay, lines, line_size, buffer, dirty_bit_buffer);
 	//Cache l2();
 	//Bus b();
 	Memory m(1);
@@ -30,6 +42,9 @@ main(int argc, char **argv)
 	sim->Reset();
 	sim->Run();
 	sim->Print();
+
+	delete []buffer;
+	delete []dirty_bit_buffer;
 
 	return 0;
 }
