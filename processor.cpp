@@ -16,13 +16,17 @@ void Processor::Reset()
 	wait = 0;
 	out.data.sendNothing();
 	rewind(trace);
+	
+	//statistics variables
+	total_latency_cycles = cycles_t(0);
+	start_cycle = cycles_t(0);
+	end_cycle = cycles_t(0);
+	requests = 0;
 }
 
 void Processor::Start()
 {
 	mdata_t item; //mdata_t defined in mdata.h
-
-	//printf("Processor cycle start, wait = %d\n", wait);
 
 	//if I'm not waiting and the input port is not busy
 	//read an item from the file
@@ -42,6 +46,11 @@ void Processor::Start()
 				wait = 1;
 				wait_addr = item.addr;
 				printf("P: wait = %d, wait_addr = %lu\n", wait, wait_addr);
+
+				//counting statistics for read requests
+				//not considering the time while cache is busy
+				start_cycle = Sim::cycle;
+				requests++;
 			}
 		}
 	}
@@ -62,6 +71,10 @@ void Processor::End()
 		}
 		//data received -> don't wait anymore
 		wait = 0;
+
+		//calculate the latency
+		end_cycle = Sim::cycle;
+		total_latency_cycles = total_latency_cycles + (end_cycle - start_cycle);
 	}
 
 	//if the trace is over and I'm not waiting for anything
@@ -75,4 +88,10 @@ void Processor::End()
 	}
 }
 
-void Processor::print_hook(void) const {}
+void Processor::print_hook(void) const {
+	//printing statistics
+	std::cout << "## Requests: " << requests << "\n";
+	std::cout << "## Total latency cycles: " << total_latency_cycles << "\n";
+	//the following print doesn't give a decimal value :(
+	std::cout << "## Average latency: " << total_latency_cycles/cycles_t(requests) << "\n";
+}
