@@ -32,9 +32,8 @@ void Cache::Reset()
 	//set all dirty bits to 0
 	int i;
 	for(i=0; i<clines; i++){
-		dirty_bit_buffer[i] = '1';
-		//buffer[i] = -cline_size;
-		buffer[i] = i*cline_size;
+		dirty_bit_buffer[i] = '0';
+		buffer[i] = -cline_size;
 	}
 	
 	hits = 0;
@@ -60,6 +59,20 @@ void Cache::Start()
 		printf("C: miss item = %c %lu\n", miss_item.type, miss_item.addr);
 		//send the item to the output port
 		m_out.data = miss_item;
+		wait = 1;
+		wait_addr = miss_item.addr;
+		printf("C: wait = %d, wait_addr = %lu\n", wait, wait_addr);
+	}
+
+	//send data to memory (write miss case)
+	else if(miss && !wait && !m_in.busy && miss_item.type == 'W'){
+		printf("C: miss item = %c %lu\n", miss_item.type, miss_item.addr);
+		//send the item to the output port
+		item = miss_item;
+		//setting the type to 'R' so that the memory will send a response
+		item.type = 'R';
+		m_out.data = item;
+		
 		wait = 1;
 		wait_addr = miss_item.addr;
 		printf("C: wait = %d, wait_addr = %lu\n", wait, wait_addr);
@@ -115,10 +128,12 @@ void Cache::End()
 			//reset dirty bit
 			dirty_bit_buffer[pos] = '0';
 
-			//now I have the data and I can reply to the processor
-			respond = Sim::cycle + cycles_t(latency);
-			respond_addr = item.addr;
-			std::cout << "C: respond = " << respond << "\n";
+			if(miss_item.type == 'R'){
+				//now I have the data and I can reply to the processor
+				respond = Sim::cycle + cycles_t(latency);
+				respond_addr = item.addr;
+				std::cout << "C: respond = " << respond << "\n";
+			}
 		}
 	}
 
@@ -135,7 +150,7 @@ void Cache::End()
 			if(buffer[pos] <= item.addr && item.addr < buffer[pos]+cline_size){
 				// HIT //
 				hits++;
-				printf("C(s): It's a hit! %lu\n", item.addr);		
+				printf("C(s): It's a read hit! %lu\n", item.addr);		
 				respond = Sim::cycle + cycles_t(latency);
 				respond_addr = item.addr;
 				std::cout << "C: respond = " << respond << "\n";
@@ -143,12 +158,32 @@ void Cache::End()
 			else{
 				// MISS //
 				misses++;
-				printf("C: It's a miss! %lu\n", item.addr);
+				printf("C: It's a read miss! %lu\n", item.addr);
 				miss = 1;
 				miss_item = item;
 				//only setting the respond address because we don't know how long it will take the memory to answer
 				respond_addr = item.addr;
 			}
+		}
+		else if(item.type == 'W'){
+			printf("C: it's a write!\n");
+			//check if it is a hit
+			pos = (int)((item.addr/cline_size)%clines);	
+			if(buffer[pos] <= item.addr && item.addr < buffer[pos]+cline_size){
+				// HIT //
+				hits++;
+				printf("C(s): It's a write hit! %lu\n", item.addr);		
+				dirty_bit_buffer[pos] = '1';
+			}
+			else{
+				// MISS //
+				misses++;
+				printf("C: It's a write miss! %lu\n", item.addr);
+				miss = 1;
+				miss_item = item;
+				//it's a write miss -> no need to respond to processor -> we don't set the respond_addr
+			}
+
 		}
 	}
 
