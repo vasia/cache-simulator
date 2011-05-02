@@ -43,12 +43,12 @@ void Memory::End()
 
 printf("M: item = %c %lu\n", item.type, item.addr);
 
-		//if (item.type == 'R') {
-			//printf("M: is load!\n");
+		if (item.type == 'R') {
+			printf("M: is load!\n");
 			respond = Sim::cycle + cycles_t(latency);
 			respond_addr = item.addr;
 			std::cout << "M: respond = " << respond << "\n";
-		//}
+		}
 	}
 
 	if (respond != NEVER) {

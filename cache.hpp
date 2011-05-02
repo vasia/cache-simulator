@@ -43,7 +43,8 @@ private:
 	char *dirty_bit_buffer;	//dirty-bit buffer for the write-back policy
 	bool miss;
 	mdata_t miss_item;
-	bool dirty;
-	mdata_t dirty_item;
+	bool write_back;
+	mdata_t write_back_item;
+	int hits, misses;
 };
 

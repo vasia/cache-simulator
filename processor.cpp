@@ -22,25 +22,28 @@ void Processor::Start()
 {
 	mdata_t item; //mdata_t defined in mdata.h
 
+	//printf("Processor cycle start, wait = %d\n", wait);
+
 	//if I'm not waiting and the input port is not busy
 	//read an item from the file
 	if (!wait && !in.busy) {
 		fscanf(trace, "%c %lu\n", &item.type, &item.addr);
-		item.size = 4;
+		//to make sure we don't read rubbish from the file
+		if(item.type == 'R' || item.type == 'W'){ 
+			item.size = 4;
 
-		printf("P: item = %c %lu\n", item.type, item.addr);
+			printf("P: item = %c %lu\n", item.type, item.addr);
 
-		//send the item to the output port
-		out.data = item;
+			//send the item to the output port
+			out.data = item;
 
-		//if the instruction is a load
-		//The processor has to wait both for reads and writes
-		//set the waiting flag
-		wait = 1;
-		wait_addr = item.addr;
-
-		printf("P: wait = %d, wait_addr = %lu\n", wait, wait_addr);
-
+			//if the instruction is a load
+			if(item.type == 'R'){
+				wait = 1;
+				wait_addr = item.addr;
+				printf("P: wait = %d, wait_addr = %lu\n", wait, wait_addr);
+			}
+		}
 	}
 }
 
@@ -51,6 +54,7 @@ void Processor::End()
 	//if there is data in the input port
 	if (!in.data.isNothing()) {
 		item = in.data;
+		printf("P: received item = %c %lu\n", item.type, item.addr);
 
 		//and it's not the data I'm waiting for
 		if (item.addr != wait_addr) {
