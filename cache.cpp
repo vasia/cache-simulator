@@ -1,13 +1,14 @@
 #include "cache.hpp"
 #include <stdio.h>
 
-Cache::Cache(int delay, int lines, int line_size, unsigned long *cache_buffer, char *cache_dirty_bit_buffer) : Module("Cache", address_t(0), 0)
+Cache::Cache(int id, int delay, int lines, int line_size, unsigned long *cache_buffer, char *cache_dirty_bit_buffer) : Module("Cache", address_t(0), 0)
 {
 	latency = delay;
 	clines = lines;
 	cline_size = line_size;
 	buffer = cache_buffer;
 	dirty_bit_buffer = cache_dirty_bit_buffer;
+	cid = id;
 
 	p_out.data.setModule(this);
 	p_out.busy.setModule(this);
@@ -49,24 +50,24 @@ void Cache::Start()
 	if(Sim::cycle >= respond){
 		item.type = 'R';	//does it make sense now? (before you ask)
 		item.addr = respond_addr;
-		printf("C(s): sending %lu\n", respond_addr);
+		printf("C(%d): sending %lu\n", cid, respond_addr);
 		p_out.data = item;
 		respond = NEVER;
 	}
 
 	//send data to the memory (read miss case)
 	else if(miss && !wait && !m_in.busy && miss_item.type == 'R'){
-		printf("C: miss item = %c %lu\n", miss_item.type, miss_item.addr);
+		printf("C(%d): miss item = %c %lu\n", cid, miss_item.type, miss_item.addr);
 		//send the item to the output port
 		m_out.data = miss_item;
 		wait = 1;
 		wait_addr = miss_item.addr;
-		printf("C: wait = %d, wait_addr = %lu\n", wait, wait_addr);
+		printf("C(%d): wait = %d, wait_addr = %lu\n", cid, wait, wait_addr);
 	}
 
 	//send data to memory (write miss case)
 	else if(miss && !wait && !m_in.busy && miss_item.type == 'W'){
-		printf("C: miss item = %c %lu\n", miss_item.type, miss_item.addr);
+		printf("C(%d): miss item = %c %lu\n", cid, miss_item.type, miss_item.addr);
 		//send the item to the output port
 		item = miss_item;
 		//setting the type to 'R' so that the memory will send a response
@@ -75,12 +76,12 @@ void Cache::Start()
 		
 		wait = 1;
 		wait_addr = miss_item.addr;
-		printf("C: wait = %d, wait_addr = %lu\n", wait, wait_addr);
+		printf("C(%d): wait = %d, wait_addr = %lu\n", cid, wait, wait_addr);
 	}
 
 	//send data to the memory (replacing a dirty block)
 	else if(write_back && !wait && !m_in.busy){
-		printf("C: sending dirty item %c %lu to memory\n", dirty_item.type, dirty_item.addr);
+		printf("C(%d): sending dirty item %c %lu to memory\n", cid, dirty_item.type, dirty_item.addr);
 		//send item to the output port
 		m_out.data = dirty_item;
 		write_back = 0;
@@ -99,11 +100,11 @@ void Cache::End()
 	//if the memory has sent data
 	if (!m_in.data.isNothing()) {
 		item = m_in.data;
-		printf("C: received item = %c %lu\n", item.type, item.addr);
+		printf("C(%d): received item = %c %lu\n", cid, item.type, item.addr);
 
 		//and it's not the data I'm waiting for
 		if (item.addr != wait_addr) {
-			fprintf(stderr, "C: ERROR: received wrong address\n");
+			fprintf(stderr, "C(%d): ERROR: received wrong address\n", cid);
 		}
 		//data received -> don't wait anymore
 		wait = 0;
@@ -112,7 +113,7 @@ void Cache::End()
 
 		//check dirty bit
 		if(dirty_bit_buffer[pos] == '1'){
-			printf("C: Dirty block!\n"); 
+			printf("C(%d): Dirty block!\n", cid); 
 			//need to replace a dirty block
 			//so, we need to send it back to memory (write-back policy)
 			dirty_item.addr = buffer[pos];
@@ -123,7 +124,7 @@ void Cache::End()
 		else{
 			//update the cache contents
 			buffer[pos] = (item.addr/cline_size)*cline_size;
-			printf("C: Cache updated at position %d with address %lu\n", pos, buffer[pos]);
+			printf("C(%d): Cache updated at position %d with address %lu\n", cid, pos, buffer[pos]);
 
 			//reset dirty bit
 			dirty_bit_buffer[pos] = '0';
@@ -132,7 +133,7 @@ void Cache::End()
 				//now I have the data and I can reply to the processor
 				respond = Sim::cycle + cycles_t(latency);
 				respond_addr = item.addr;
-				std::cout << "C: respond = " << respond << "\n";
+				std::cout << "C(" << cid << "): respond = " << respond << "\n";
 			}
 		}
 	}
@@ -141,24 +142,24 @@ void Cache::End()
 	else if (!p_in.data.isNothing()) {
 		item = p_in.data;
 
-		printf("C: item = %c %lu\n", item.type, item.addr);
+		printf("C(%d): item = %c %lu\n", cid, item.type, item.addr);
 
 		if (item.type == 'R') {
-			printf("C: is read!\n");
+			printf("C(%d): is read!\n", cid);
 			//check if it is a hit
 			pos = (int)((item.addr/cline_size)%clines);	
 			if(buffer[pos] <= item.addr && item.addr < buffer[pos]+cline_size){
 				// HIT //
 				hits++;
-				printf("C(s): It's a read hit! %lu\n", item.addr);		
+				printf("C(%d): It's a read hit! %lu\n", cid, item.addr);		
 				respond = Sim::cycle + cycles_t(latency);
 				respond_addr = item.addr;
-				std::cout << "C: respond = " << respond << "\n";
+				std::cout << "C(" << cid << "): respond = " << respond << "\n";
 			}
 			else{
 				// MISS //
 				misses++;
-				printf("C: It's a read miss! %lu\n", item.addr);
+				printf("C(%d): It's a read miss! %lu\n", cid, item.addr);
 				miss = 1;
 				miss_item = item;
 				//only setting the respond address because we don't know how long it will take the memory to answer
@@ -166,19 +167,19 @@ void Cache::End()
 			}
 		}
 		else if(item.type == 'W'){
-			printf("C: it's a write!\n");
+			printf("C(%d): it's a write!\n", cid);
 			//check if it is a hit
 			pos = (int)((item.addr/cline_size)%clines);	
 			if(buffer[pos] <= item.addr && item.addr < buffer[pos]+cline_size){
 				// HIT //
 				hits++;
-				printf("C(s): It's a write hit! %lu\n", item.addr);		
+				printf("C(%d): It's a write hit! %lu\n", cid, item.addr);		
 				dirty_bit_buffer[pos] = '1';
 			}
 			else{
 				// MISS //
 				misses++;
-				printf("C: It's a write miss! %lu\n", item.addr);
+				printf("C(%d): It's a write miss! %lu\n", cid, item.addr);
 				miss = 1;
 				miss_item = item;
 				//it's a write miss -> no need to respond to processor -> we don't set the respond_addr
@@ -202,5 +203,5 @@ void Cache::End()
 }
 
 void Cache::print_hook(void) const {
-	printf("\n\n Hits = %d \n Misses = %d\n\n", hits, misses);
+	printf("\n\n C(%d): Hits = %d \n Misses = %d\n\n", cid, hits, misses);
 }

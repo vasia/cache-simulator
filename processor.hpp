@@ -13,7 +13,7 @@ public:
 		Port<mdata_t> data;
 	} out;
 
-	Processor(char *file);
+	Processor(int id, char *file);
 
     virtual void Reset();
     virtual void Start();
@@ -24,5 +24,10 @@ private:
 	FILE *trace;
 	int wait;
 	unsigned long wait_addr;
+	cycles_t total_latency_cycles;
+	cycles_t start_cycle;
+	cycles_t end_cycle;
+	unsigned long requests;
+	int pid;
 };
 

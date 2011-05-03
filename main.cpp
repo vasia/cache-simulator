@@ -9,9 +9,13 @@ main(int argc, char **argv)
 	Sim *sim = Sim::getSim();
 
 	int delay = 1;
-	int lines = 3;
-	int line_size = 2;
-
+	int lines = 100;
+	int line_size = 128;	//has to be a multiple of 8
+	int cachel1_id1 = 1;
+	int cachel1_id2 = 2;
+	int cachel2_id = 10;
+	int processor_id1 = 1;
+	int processor_id2 = 2;
 
 	//allocate buffers
 	unsigned long *buffer;
@@ -19,9 +23,9 @@ main(int argc, char **argv)
 	buffer = new unsigned long[lines];
 	dirty_bit_buffer = new char[lines];
 
-	Processor p("small1.out");
+	Processor p(processor_id1, "small1.out");
 	
-	Cache l1(delay, lines, line_size, buffer, dirty_bit_buffer);
+	Cache l1(cachel1_id1, delay, lines, line_size, buffer, dirty_bit_buffer);
 	//Cache l2();
 	//Bus b();
 	Memory m(1);

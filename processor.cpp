@@ -2,13 +2,15 @@
 #include <stdio.h>
 
 //initialization function - open trace file
-Processor::Processor(char *file) : Module("Processor", address_t(0), 0)
+Processor::Processor(int id, char *file) : Module("Processor", address_t(0), 0)
 {
 	trace = fopen(file,"r");
 
 	out.data.setModule(this);
 	in.data.setModule(this);
 	in.busy.setModule(this);
+
+	pid = id;
 }
 
 void Processor::Reset()
@@ -36,7 +38,7 @@ void Processor::Start()
 		if(item.type == 'R' || item.type == 'W'){ 
 			item.size = 4;
 
-			printf("P: item = %c %lu\n", item.type, item.addr);
+			printf("P(%d): item = %c %lu\n", pid, item.type, item.addr);
 
 			//send the item to the output port
 			out.data = item;
@@ -45,7 +47,7 @@ void Processor::Start()
 			if(item.type == 'R'){
 				wait = 1;
 				wait_addr = item.addr;
-				printf("P: wait = %d, wait_addr = %lu\n", wait, wait_addr);
+				printf("P(%d): wait = %d, wait_addr = %lu\n", pid, wait, wait_addr);
 
 				//counting statistics for read requests
 				//not considering the time while cache is busy
@@ -63,11 +65,11 @@ void Processor::End()
 	//if there is data in the input port
 	if (!in.data.isNothing()) {
 		item = in.data;
-		printf("P: received item = %c %lu\n", item.type, item.addr);
+		printf("P(%d): received item = %c %lu\n", pid, item.type, item.addr);
 
 		//and it's not the data I'm waiting for
 		if (item.addr != wait_addr) {
-			fprintf(stderr, "P: ERROR: received wrong address\n");
+			fprintf(stderr, "P(%d): ERROR: received wrong address\n", pid);
 		}
 		//data received -> don't wait anymore
 		wait = 0;
@@ -90,8 +92,8 @@ void Processor::End()
 
 void Processor::print_hook(void) const {
 	//printing statistics
-	std::cout << "## Requests: " << requests << "\n";
-	std::cout << "## Total latency cycles: " << total_latency_cycles << "\n";
+	std::cout << "P(" << pid << "): ## Requests: " << requests << "\n";
+	std::cout << "P(" << pid << "): ## Total latency cycles: " << total_latency_cycles << "\n";
 	//the following print doesn't give a decimal value :(
-	std::cout << "## Average latency: " << total_latency_cycles/cycles_t(requests) << "\n";
+	std::cout << "P(" << pid << "): ## Average latency: " << total_latency_cycles/cycles_t(requests) << "\n";
 }

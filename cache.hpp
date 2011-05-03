@@ -24,7 +24,7 @@ public:
 		//ControlPort busy;
 	} m_out;
 
-	Cache(int delay, int lines, int line_size, unsigned long *cache_buffer, char *cache_dirty_bit_buff);
+	Cache(int id, int delay, int lines, int line_size, unsigned long *cache_buffer, char *cache_dirty_bit_buff);
 
     virtual void Reset();
     virtual void Start();
@@ -44,7 +44,8 @@ private:
 	bool miss;
 	mdata_t miss_item;
 	bool write_back;
-	mdata_t write_back_item;
+	mdata_t dirty_item;
 	int hits, misses;
+	int cid;
 };
 
